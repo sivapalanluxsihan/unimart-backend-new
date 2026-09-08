@@ -1,0 +1,562 @@
+{
+  "info": {
+    "name": "UniMart API v1",
+    "description": "UniMart Monolithic Full-Stack Lab Series - Guide 07. Run folders top to bottom: Auth -> Listings -> Reviews -> Negative Tests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{access_token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register seller",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/register", "host": ["{{base_url}}"], "path": ["auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"universityEmail\": \"{{seller_email}}\",\n  \"password\": \"{{seller_password}}\",\n  \"fullName\": \"Sam Seller\"\n}"
+            },
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Register succeeds or already exists', () => {",
+                  "  pm.expect([201, 409]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register buyer",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/register", "host": ["{{base_url}}"], "path": ["auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"universityEmail\": \"{{buyer_email}}\",\n  \"password\": \"{{buyer_password}}\",\n  \"fullName\": \"Bev Buyer\"\n}"
+            },
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Register succeeds or already exists', () => {",
+                  "  pm.expect([201, 409]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (seller)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{seller_email}}\",\n  \"password\": \"{{seller_password}}\"\n}"
+            },
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login succeeds', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.expect(json.accessToken).to.be.a('string');",
+                  "pm.environment.set('access_token', json.accessToken);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Listings",
+      "item": [
+        {
+          "name": "Create listing",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/listings", "host": ["{{base_url}}"], "path": ["listings"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Data Structures Textbook\",\n  \"description\": \"Second edition, clean condition.\",\n  \"price\": 2500.00,\n  \"categoryId\": {{category_id}}\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Created', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.id).to.be.a('number');",
+                  "pm.expect(body.status).to.eql('AVAILABLE');",
+                  "pm.environment.set('listing_id', body.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get listing by id",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/listings/{{listing_id}}", "host": ["{{base_url}}"], "path": ["listings", "{{listing_id}}"] },
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Found', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().id).to.eql(Number(pm.environment.get('listing_id')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List listings (paged, filtered)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/listings?page=0&size=10&categoryId={{category_id}}&status=AVAILABLE",
+              "host": ["{{base_url}}"],
+              "path": ["listings"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" },
+                { "key": "categoryId", "value": "{{category_id}}" },
+                { "key": "status", "value": "AVAILABLE" }
+              ]
+            },
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Page returned', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().content).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update listing (owner)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/listings/{{listing_id}}", "host": ["{{base_url}}"], "path": ["listings", "{{listing_id}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Data Structures Textbook (2nd ed, updated)\",\n  \"description\": \"Second edition, clean condition. Price reduced.\",\n  \"price\": 2200.00,\n  \"categoryId\": {{category_id}}\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Updated', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().price).to.eql(2200.0);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Archive listing (owner)",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/listings/{{listing_id}}", "host": ["{{base_url}}"], "path": ["listings", "{{listing_id}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('No Content on archive', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "Login (buyer)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{buyer_email}}\",\n  \"password\": \"{{buyer_password}}\"\n}"
+            },
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Buyer login succeeds', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('access_token', json.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create review",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/reviews", "host": ["{{base_url}}"], "path": ["reviews"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": {{completed_order_id}},\n  \"rating\": 5,\n  \"comment\": \"Item matched the description.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Created', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.rating).to.eql(5);",
+                  "pm.environment.set('review_id', body.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update review (author)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/reviews/{{review_id}}", "host": ["{{base_url}}"], "path": ["reviews", "{{review_id}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 4,\n  \"comment\": \"Updated: still good, minor wear noticed later.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Updated', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().rating).to.eql(4);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List reviews for listing",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/listings/{{listing_id}}/reviews?page=0&size=10",
+              "host": ["{{base_url}}"],
+              "path": ["listings", "{{listing_id}}", "reviews"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" }
+              ]
+            },
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Page returned', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete review (author)",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/reviews/{{review_id}}", "host": ["{{base_url}}"], "path": ["reviews", "{{review_id}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('No Content on delete', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Negative Tests",
+      "item": [
+        {
+          "name": "Create listing without token -> 401",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/listings", "host": ["{{base_url}}"], "path": ["listings"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"No auth\",\n  \"description\": \"Should be rejected.\",\n  \"price\": 10.00,\n  \"categoryId\": {{category_id}}\n}"
+            },
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('401 Unauthorized', () => pm.response.to.have.status(401));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create listing with blank title -> 400",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/listings", "host": ["{{base_url}}"], "path": ["listings"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"\",\n  \"description\": \"Missing title.\",\n  \"price\": 10.00,\n  \"categoryId\": {{category_id}}\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 with fieldErrors.title', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.json().fieldErrors).to.have.property('title');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update another seller's listing -> 403",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/listings/{{listing_id}}", "host": ["{{base_url}}"], "path": ["listings", "{{listing_id}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Hijacked title\",\n  \"description\": \"Not my listing.\",\n  \"price\": 1.00,\n  \"categoryId\": {{category_id}}\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Run this request while logged in as a DIFFERENT user than the",
+                  "// listing owner (e.g. right after 'Login (buyer)') to exercise this case."
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('403 Forbidden', () => pm.response.to.have.status(403));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get archived/non-existent listing -> 404",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/listings/999999", "host": ["{{base_url}}"], "path": ["listings", "999999"] },
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('404 Not Found', () => pm.response.to.have.status(404));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Review a non-completed order -> 409",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/reviews", "host": ["{{base_url}}"], "path": ["reviews"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": {{completed_order_id}},\n  \"rating\": 5,\n  \"comment\": \"Order not completed yet.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('409 Conflict', () => pm.response.to.have.status(409));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Review another buyer's order -> 403",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/reviews", "host": ["{{base_url}}"], "path": ["reviews"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": {{completed_order_id}},\n  \"rating\": 5,\n  \"comment\": \"Not my order.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('403 Forbidden', () => pm.response.to.have.status(403));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create a second review for the same order -> 409",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/reviews", "host": ["{{base_url}}"], "path": ["reviews"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": {{completed_order_id}},\n  \"rating\": 3,\n  \"comment\": \"Duplicate review attempt.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('409 Conflict', () => pm.response.to.have.status(409));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rating outside 1-5 -> 400",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/reviews", "host": ["{{base_url}}"], "path": ["reviews"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": {{completed_order_id}},\n  \"rating\": 9,\n  \"comment\": \"Rating too high.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 validation error', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.json().fieldErrors).to.have.property('rating');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Expired/malformed JWT -> 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer this.is.not.a.valid.jwt" }
+            ],
+            "url": { "raw": "{{base_url}}/listings", "host": ["{{base_url}}"], "path": ["listings"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Malformed token test\",\n  \"description\": \"Should be rejected.\",\n  \"price\": 10.00,\n  \"categoryId\": {{category_id}}\n}"
+            },
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('401 Unauthorized', () => pm.response.to.have.status(401));"]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

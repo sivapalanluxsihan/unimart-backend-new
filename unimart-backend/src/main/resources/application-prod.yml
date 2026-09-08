@@ -1,0 +1,26 @@
+# Active when SPRING_PROFILES_ACTIVE=prod. All values still come from
+# environment variables / a secret store — never commit real secrets here.
+
+spring:
+  jpa:
+    show-sql: false
+
+logging:
+  level:
+    root: WARN
+    lk.ac.kln.unimart: INFO
+
+server:
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never

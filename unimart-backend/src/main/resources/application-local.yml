@@ -1,0 +1,20 @@
+# Active when SPRING_PROFILES_ACTIVE=local (the IntelliJ run configuration
+# default from Guide 03/05). Values still come from environment variables;
+# nothing sensitive is hard-coded here.
+
+spring:
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: true
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    lk.ac.kln.unimart: DEBUG
+
+server:
+  error:
+    include-message: always
+    include-binding-errors: always
